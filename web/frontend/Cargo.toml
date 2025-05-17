@@ -1,0 +1,49 @@
+[package]
+name = "trumpet-synth-web"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[dependencies]
+reqwest = "0.12.15"
+serde = "1.0.219"
+dioxus = { version = "0.6.3", features = ["web"] }
+trumpet-synth = { path = "../../trumpet-synth", features = ["std"] }
+tracing = "0.1.41"
+async-std = "1.13.1"
+wasm-bindgen-futures = "0.4.50"
+console_error_panic_hook = "0.1.7"
+console_log = "1.0.0"
+fixed = "1.29.0"
+js-sys = "0.3.77"
+rytmos-synth = { git = "https://github.com/PietPtr/Rytmos.git" }
+log = "0.4.27"
+wasm-bindgen = "0.2.100"
+
+[build-dependencies]
+wasm-audio = { git = "https://github.com/PietPtr/Rytmos.git" }
+
+[features]
+default = []
+server = ["dioxus/server"]
+web = ["dioxus/web"]
+
+[dependencies.web-sys]
+version = "0.3.77"
+features = [
+    "AudioContext",
+    "AudioDestinationNode",
+    'AudioNode',
+    'AudioParam',
+    "AudioWorklet",
+    "AudioWorkletNode",
+    "AudioWorkletNodeOptions",
+    'GainNode',
+    "MessagePort",
+    'OscillatorNode',
+    'OscillatorType',
+    'Request',
+    'RequestInit',
+    'Response',
+    "Window",
+]

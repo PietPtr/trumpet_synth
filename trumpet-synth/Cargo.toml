@@ -1,0 +1,20 @@
+[package]
+name = "trumpet-synth"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+fixed = "1.27.0"
+log = "0.4.22"
+heapless = "0.7.16"
+rytmos-engrave = { git = "https://github.com/PietPtr/Rytmos.git" }
+rytmos-synth = { git = "https://github.com/PietPtr/Rytmos.git" }
+common = { git = "https://github.com/PietPtr/Rytmos.git", features = [
+    "rp-pico",
+] }
+enum-iterator = "2.1.0"
+# TODO: not no_std
+tracing = { version = "0.1.41", optional = true }
+
+[features]
+std = ["tracing"]
