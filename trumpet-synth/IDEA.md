@@ -9,3 +9,4 @@ Goals:
 - Sounds vaguely trumpet like
 - Uses tube lengths to calculate note frequency, not notenames
 - No tuning slides, assumes use on the usual sharp notes
+- maybe some trimmers for tuning?
