@@ -45,6 +45,10 @@ impl TrumpetInputState {
         }
     }
 
+    pub(crate) fn valves(&self) -> [bool; 3] {
+        [self.first, self.second, self.third]
+    }
+
     pub(crate) fn valve(&self, id: Valve) -> bool {
         match id {
             Valve::First => self.first,

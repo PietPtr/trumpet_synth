@@ -1,4 +1,5 @@
 use common::debouncer::Debouncer;
+use fixed::types::I1F15;
 use heapless::Vec;
 
 use crate::{
@@ -64,7 +65,50 @@ impl<INPUTS: Inputs> TrumpetInputs<INPUTS> {
         current_state.second = self.debouncer_is_high(Valve::Second);
         current_state.third = self.debouncer_is_high(Valve::Third);
 
-        TODO: make logic for detecting valve changes / changes in pot values
+        // TODO: make logic for detecting valve changes / changes in pot values and add them to the events list
+
+        let mut events: Vec<TrumpetEvent, 4> = Vec::new();
+
+        for (valve, (&current_state, &last_state)) in current_state
+            .valves()
+            .iter()
+            .zip(self.last_trumpet_state.valves().iter())
+            .enumerate()
+        {
+            let event = if !last_state && current_state {
+                TrumpetEvent::ValveDown(Valve::from(valve))
+            } else if last_state && !current_state {
+                TrumpetEvent::ValveUp(Valve::from(valve))
+            } else {
+                continue;
+            };
+
+            events
+                .push(event)
+                .ok()
+                .expect("No more than three valves and 4 elements in events so should be fine");
+        }
+
+        // TODO: make const
+        let pot_threshold: I1F15 = I1F15::from_num(100. / 4096.);
+
+        let enough_change = |last: I1F15, current: I1F15| (last - current).abs() > pot_threshold;
+
+        // TODO: one of these can in theory be dropped and may cause weirdness
+        if enough_change(
+            self.last_trumpet_state.blowstrength,
+            current_state.blowstrength,
+        ) {
+            events
+                .push(TrumpetEvent::BlowStrengthChange(current_state.blowstrength))
+                .ok();
+        }
+
+        if enough_change(self.last_trumpet_state.embouchure, current_state.embouchure) {
+            events
+                .push(TrumpetEvent::EmbouchureChange(current_state.blowstrength))
+                .ok();
+        }
 
         self.last_trumpet_state = current_state;
     }
@@ -87,5 +131,7 @@ impl<FIFO: Fifo, INPUTS: Inputs> TrumpetInterface<FIFO, INPUTS> {
 
     pub fn run(&mut self) {
         self.inputs.update_events();
+
+        // based on these events, update the model, and based on what the model returns, send commands to the synth
     }
 }

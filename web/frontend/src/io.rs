@@ -2,7 +2,7 @@ use dioxus::signals::{Readable, Signal};
 use fixed::types::I1F15;
 use trumpet_synth::{
     io,
-    trumpet::{BlowStrength, Embouchure, Valve, Valves},
+    trumpet::{BlowStrength, Embouchure, Valve},
 };
 use web_sys::{wasm_bindgen::JsValue, AudioWorkletNode};
 

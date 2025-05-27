@@ -91,6 +91,10 @@ impl Trumpet {
     /// U12F4 goes from 0 to ~4095.94 in steps of 0.0625, high notes on a trumpet
     /// rarely exceed 2kHz so this accomodates frequencies nicely.
     pub fn frequency(valves: Valves, emb: I1F15, blow: I1F15) -> U12F4 {
+        // valves map to which frequency the tube should resonate at
+        // embouchure maps to which overtone of that frequency we get
+        // blow strength maps to the volume
         todo!()
+        TODO: slightly refactor this to output synth commands
     }
 }

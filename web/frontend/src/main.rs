@@ -8,7 +8,6 @@
 use core::borrow::BorrowMut;
 use std::sync::OnceLock;
 use std::time::Duration;
-use std::{convert::TryFrom, iter::Iterator};
 
 use dioxus::prelude::*;
 use trumpet_synth::interface::TrumpetInterface;
@@ -17,7 +16,6 @@ use trumpet_synth_web::io::{WebFifo, WebInputs};
 // use trumpet_synth_web::io::{}; // TODO: define IO
 use wasm_bindgen_futures::JsFuture;
 use web_sys::js_sys::Array;
-use web_sys::wasm_bindgen::prelude::Closure;
 use web_sys::wasm_bindgen::JsCast;
 use web_sys::{
     window, AudioContext, AudioWorkletNode, AudioWorkletNodeOptions, Request, RequestInit, Response,
