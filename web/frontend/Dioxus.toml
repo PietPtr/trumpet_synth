@@ -1,0 +1,8 @@
+[application]
+
+[web.app]
+base_path = "trumpet_synth"
+title = "Trumpet Synth"
+
+[bundle]
+icon = ["assets/icon.png"]
