@@ -12,7 +12,7 @@ use std::{convert::TryFrom, iter::Iterator};
 
 use dioxus::prelude::*;
 use trumpet_synth::io::IO;
-use trumpet_synth_web::io::WebFifo;
+use trumpet_synth_web::io::{WebFifo, WebInputs};
 // use trumpet_synth_web::io::{}; // TODO: define IO
 use wasm_bindgen_futures::JsFuture;
 use web_sys::js_sys::Array;
@@ -25,15 +25,112 @@ use web_sys::{
 // TODO: use_effect or something?
 static ONCE: OnceLock<()> = OnceLock::new();
 
+pub struct AudioSetup {
+    pub node_signal: Signal<Option<AudioWorkletNode>>,
+    pub ctx_signal: Signal<Option<AudioContext>>,
+    pub is_audio_initialized_signal: Signal<bool>,
+}
+
+// TODO: move to library
+impl AudioSetup {
+    pub fn new() -> Self {
+        Self {
+            node_signal: use_signal(|| None),
+            ctx_signal: use_signal(|| None),
+            is_audio_initialized_signal: use_signal(|| false),
+        }
+    }
+
+    pub fn setup_wasm(&self) {
+        let mut node_signal = self.node_signal;
+        let mut ctx_signal = self.ctx_signal;
+        use_future(move || async move {
+            let ctx = AudioContext::new().unwrap();
+
+            JsFuture::from(
+                ctx.audio_worklet()
+                    .unwrap()
+                    .add_module(&asset!("/assets/wasm_audio.js").to_string())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+            let options = RequestInit::new();
+            options.set_method("GET");
+            let request = Request::new_with_str_and_init(
+                &asset!("/assets/wasm_audio_bg.wasm").to_string(),
+                &options,
+            )
+            .unwrap();
+
+            let window = window().unwrap();
+            let response = JsFuture::from(window.fetch_with_request(&request))
+                .await
+                .unwrap()
+                .unchecked_into::<Response>();
+
+            let array_buffer = JsFuture::from(response.array_buffer().unwrap())
+                .await
+                .unwrap();
+
+            let options = AudioWorkletNodeOptions::new();
+            options.set_processor_options(Some(&Array::of1(&array_buffer)));
+
+            let node = AudioWorkletNode::new_with_options(&ctx, "my-processor", &options).unwrap();
+            node.connect_with_audio_node(&ctx.destination()).unwrap();
+
+            node_signal.set(Some(node));
+            ctx_signal.set(Some(ctx));
+        });
+    }
+
+    pub fn initialize_audio(&mut self) {
+        if !*self.is_audio_initialized_signal.read() {
+            drop(
+                self.ctx_signal
+                    .borrow_mut()
+                    .as_mut()
+                    .unwrap()
+                    .resume()
+                    .unwrap(),
+            );
+        }
+
+        self.is_audio_initialized_signal.set(true);
+    }
+
+    pub fn is_audio_initialized(&self) -> bool {
+        *self.is_audio_initialized_signal.read()
+    }
+}
+
 fn app() -> Element {
-    let mut ctx_signal: Signal<Option<AudioContext>> = use_signal(|| None);
-    let mut node_signal: Signal<Option<AudioWorkletNode>> = use_signal(|| None);
+    let mut audio_setup = AudioSetup::new();
+    audio_setup.setup_wasm();
+
+    let first_valve_signal = use_signal(|| false);
+    let second_valve_signal = use_signal(|| false);
+    let third_valve_signal = use_signal(|| false);
+    let embouchure_signal = use_signal(|| 0.0);
+    let blowstrength_signal = use_signal(|| 0.0);
+
+    let inputs = WebInputs {
+        first_valve_signal,
+        second_valve_signal,
+        third_valve_signal,
+        embouchure_signal,
+        blowstrength_signal,
+    };
 
     use_future({
+        let inputs = inputs.clone();
         move || {
+            let inputs = inputs.clone();
             async move {
                 let io = IO {
-                    fifo: WebFifo::new(node_signal),
+                    fifo: WebFifo::new(audio_setup.node_signal),
+                    inputs,
                 };
 
                 // let mut interface = SandboxInterface::new(io);
@@ -48,58 +145,6 @@ fn app() -> Element {
             }
         }
     });
-
-    // TODO: common?
-    use_future(move || async move {
-        let ctx = AudioContext::new().unwrap();
-
-        JsFuture::from(
-            ctx.audio_worklet()
-                .unwrap()
-                .add_module(&asset!("/assets/wasm_audio.js").to_string())
-                .unwrap(),
-        )
-        .await
-        .unwrap();
-
-        let options = RequestInit::new();
-        options.set_method("GET");
-        let request = Request::new_with_str_and_init(
-            &asset!("/assets/wasm_audio_bg.wasm").to_string(),
-            &options,
-        )
-        .unwrap();
-
-        let window = window().unwrap();
-        let response = JsFuture::from(window.fetch_with_request(&request))
-            .await
-            .unwrap()
-            .unchecked_into::<Response>();
-
-        let array_buffer = JsFuture::from(response.array_buffer().unwrap())
-            .await
-            .unwrap();
-
-        let options = AudioWorkletNodeOptions::new();
-        options.set_processor_options(Some(&Array::of1(&array_buffer)));
-
-        let node = AudioWorkletNode::new_with_options(&ctx, "my-processor", &options).unwrap();
-        node.connect_with_audio_node(&ctx.destination()).unwrap();
-
-        node_signal.set(Some(node));
-        ctx_signal.set(Some(ctx));
-    });
-
-    // TODO: common?
-    let mut is_audio_initialized = use_signal(|| false);
-
-    let mut initialize_audio = move || {
-        if !is_audio_initialized() {
-            drop(ctx_signal.borrow_mut().as_mut().unwrap().resume().unwrap());
-        }
-
-        is_audio_initialized.set(true);
-    };
 
     rsx! {
         div {
@@ -116,15 +161,36 @@ fn app() -> Element {
                     "Trumpet Synth"
                 }
 
-                if !is_audio_initialized() {
+                {valve_button(inputs.first_valve_signal)}
+                {valve_button(inputs.second_valve_signal)}
+                {valve_button(inputs.third_valve_signal)}
+
+                if !audio_setup.is_audio_initialized() {
                     button {
                         class: "start-button",
-                        onclick: move |_| initialize_audio(),
+                        onclick: move |_| audio_setup.initialize_audio(),
                         "Start Audio Engine"
                     }
                 }
             }
 
+        }
+    }
+}
+
+fn valve_button(mut valve: Signal<bool>) -> Element {
+    rsx! {
+        div {
+            class: "",
+            button {
+                class: "todo",
+                onmousedown: move |_| valve.set(true),
+                ontouchstart: move |_| valve.set(true),
+                onmouseup: move |_| valve.set(false),
+                ontouchend: move |_| valve.set(false),
+                onmouseleave: move |_| valve.set(false),
+                "( )"
+            }
         }
     }
 }
