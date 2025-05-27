@@ -1,5 +1,7 @@
 //! Model of the tubing of a trumpet and associated types
 
+use core::slice::SliceIndex;
+
 use fixed::types::{I12F4, I1F15, I24F8, U12F4, U24F8};
 
 #[derive(Debug, Default)]
@@ -23,6 +25,35 @@ pub struct Valves {
     pub first: ValveState,
     pub second: ValveState,
     pub third: ValveState,
+}
+
+#[derive(Debug)]
+pub enum Valve {
+    First,
+    Second,
+    Third,
+}
+
+impl Into<usize> for Valve {
+    fn into(self) -> usize {
+        match self {
+            Valve::First => 0,
+            Valve::Second => 1,
+            Valve::Third => 2,
+        }
+    }
+}
+
+impl From<usize> for Valve {
+    fn from(value: usize) -> Self {
+        match value {
+            0 => Valve::First,
+            1 => Valve::Second,
+            2 => Valve::Third,
+            // TODO: some sort of hardware panic handler that turns on a (red?) led somewhere in the rytmos library to make hardware panics easier to recognize
+            _ => unreachable!(),
+        }
+    }
 }
 
 pub type Embouchure = I1F15;
@@ -49,21 +80,17 @@ pub const BFLAT_TRUMPET: TrumpetDefinition = TrumpetDefinition {
 
 #[derive(Debug)]
 pub struct Trumpet {
-    valves: Valves,
     def: TrumpetDefinition,
 }
 
 impl Trumpet {
     pub fn new(def: TrumpetDefinition) -> Self {
-        Self {
-            valves: Valves::default(),
-            def,
-        }
+        Self { def }
     }
 
     /// U12F4 goes from 0 to ~4095.94 in steps of 0.0625, high notes on a trumpet
     /// rarely exceed 2kHz so this accomodates frequencies nicely.
-    pub fn frequency(emb: I1F15, blow: I1F15) -> U12F4 {
+    pub fn frequency(valves: Valves, emb: I1F15, blow: I1F15) -> U12F4 {
         todo!()
     }
 }

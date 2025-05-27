@@ -11,6 +11,7 @@ use std::time::Duration;
 use std::{convert::TryFrom, iter::Iterator};
 
 use dioxus::prelude::*;
+use trumpet_synth::interface::TrumpetInterface;
 use trumpet_synth::io::IO;
 use trumpet_synth_web::io::{WebFifo, WebInputs};
 // use trumpet_synth_web::io::{}; // TODO: define IO
@@ -133,12 +134,11 @@ fn app() -> Element {
                     inputs,
                 };
 
-                // let mut interface = SandboxInterface::new(io);
+                let mut interface = TrumpetInterface::new(io);
 
                 loop {
                     // for _ in 0..10 {
-                    // interface.run();
-                    // TODO: define trumpet's run loop
+                    interface.run();
 
                     async_std::task::sleep(Duration::from_millis(10)).await
                 }

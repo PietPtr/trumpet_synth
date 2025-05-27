@@ -1,4 +1,4 @@
-use crate::trumpet::{BlowStrength, Embouchure, Valves};
+use crate::trumpet::{BlowStrength, Embouchure, Valve};
 
 pub struct IO<FIFO, INPUTS> {
     pub fifo: FIFO,
@@ -20,7 +20,36 @@ pub trait Fifo {
 }
 
 pub trait Inputs {
-    fn valves(&mut self) -> Valves;
+    fn valve(&mut self, valve: Valve) -> bool;
     fn embouchure(&mut self) -> Embouchure;
     fn blowstrength(&mut self) -> BlowStrength;
+}
+
+#[derive(Debug, Default, Clone, Copy)]
+pub(crate) struct TrumpetInputState {
+    pub first: bool,
+    pub second: bool,
+    pub third: bool,
+    pub embouchure: Embouchure,
+    pub blowstrength: BlowStrength,
+}
+
+impl TrumpetInputState {
+    pub fn read_from<I: Inputs>(inputs: &mut I) -> Self {
+        Self {
+            first: inputs.valve(Valve::First),
+            second: inputs.valve(Valve::Second),
+            third: inputs.valve(Valve::Third),
+            embouchure: inputs.embouchure(),
+            blowstrength: inputs.blowstrength(),
+        }
+    }
+
+    pub(crate) fn valve(&self, id: Valve) -> bool {
+        match id {
+            Valve::First => self.first,
+            Valve::Second => self.second,
+            Valve::Third => self.third,
+        }
+    }
 }

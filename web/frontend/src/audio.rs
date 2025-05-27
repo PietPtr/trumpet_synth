@@ -7,7 +7,7 @@ use rytmos_synth::{commands::Command, synth::Synth};
 use wasm_bindgen::prelude::*;
 use web_sys::{MessageEvent, MessagePort};
 
-static SYNTH: OnceLock<Mutex<trumpet_synth::synth::PolypicophonicSynth>> = OnceLock::new();
+static SYNTH: OnceLock<Mutex<trumpet_synth::synth::TrumpetSynth>> = OnceLock::new();
 
 #[wasm_bindgen]
 pub fn init_logging() {

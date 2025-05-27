@@ -1,6 +1,9 @@
 use dioxus::signals::{Readable, Signal};
 use fixed::types::I1F15;
-use trumpet_synth::{io, trumpet::Valves};
+use trumpet_synth::{
+    io,
+    trumpet::{BlowStrength, Embouchure, Valve, Valves},
+};
 use web_sys::{wasm_bindgen::JsValue, AudioWorkletNode};
 
 // TODO: common between polypicophonic and trumpet_synth
@@ -35,19 +38,19 @@ pub struct WebInputs {
 }
 
 impl io::Inputs for WebInputs {
-    fn valves(&mut self) -> trumpet_synth::trumpet::Valves {
-        Valves {
-            first: (*self.first_valve_signal.read()).into(),
-            second: (*self.second_valve_signal.read()).into(),
-            third: (*self.third_valve_signal.read()).into(),
+    fn valve(&mut self, valve: Valve) -> bool {
+        match valve {
+            Valve::First => (*self.first_valve_signal.read()).into(),
+            Valve::Second => (*self.second_valve_signal.read()).into(),
+            Valve::Third => (*self.third_valve_signal.read()).into(),
         }
     }
 
-    fn embouchure(&mut self) -> trumpet_synth::trumpet::Embouchure {
+    fn embouchure(&mut self) -> Embouchure {
         I1F15::from_num(*self.embouchure_signal.read())
     }
 
-    fn blowstrength(&mut self) -> trumpet_synth::trumpet::BlowStrength {
+    fn blowstrength(&mut self) -> BlowStrength {
         I1F15::from_num(*self.blowstrength_signal.read())
     }
 }
