@@ -4,7 +4,7 @@ use heapless::Vec;
 
 use crate::{
     io::{Fifo, Inputs, TrumpetInputState, IO},
-    trumpet::{BlowStrength, Embouchure, Valve},
+    trumpet::{BlowStrength, Embouchure, Trumpet, TrumpetDefinition, Valve, BFLAT_TRUMPET},
 };
 
 // TODO: different place for some of these structs/impls?
@@ -20,6 +20,7 @@ pub struct TrumpetInputs<INPUTS> {
 
 const DEBOUNCE_TIME: u32 = 10;
 
+#[derive(Debug, Clone, Copy)]
 pub enum TrumpetEvent {
     ValveUp(Valve),
     ValveDown(Valve),
@@ -119,6 +120,7 @@ impl<INPUTS: Inputs> TrumpetInputs<INPUTS> {
 pub struct TrumpetInterface<FIFO, INPUTS> {
     fifo: FIFO,
     inputs: TrumpetInputs<INPUTS>,
+    trumpet: Trumpet,
 }
 
 impl<FIFO: Fifo, INPUTS: Inputs> TrumpetInterface<FIFO, INPUTS> {
@@ -126,12 +128,13 @@ impl<FIFO: Fifo, INPUTS: Inputs> TrumpetInterface<FIFO, INPUTS> {
         Self {
             fifo: io.fifo,
             inputs: TrumpetInputs::new(io.inputs),
+            trumpet: Trumpet::new(BFLAT_TRUMPET),
         }
     }
 
     pub fn run(&mut self) {
         self.inputs.update_events();
-
+        self.trumpet.update(self.inputs.events());
         // based on these events, update the model, and based on what the model returns, send commands to the synth
     }
 }
