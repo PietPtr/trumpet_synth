@@ -2,9 +2,12 @@
 
 use core::slice::SliceIndex;
 
-use fixed::types::{I12F4, I1F15, I24F8, U12F4, U24F8, U4F4};
+use fixed::{
+    traits::{Fixed, LossyFrom},
+    types::{I12F4, I1F15, I24F8, U0F16, U12F4, U1F15, U24F8, U4F4},
+};
 use heapless::Vec;
-use rytmos_synth::commands::CommandMessage;
+use rytmos_synth::commands::{Command, CommandMessage};
 
 use crate::interface::TrumpetEvent;
 
@@ -87,8 +90,8 @@ impl From<usize> for Valve {
     }
 }
 
-pub type Embouchure = I1F15;
-pub type BlowStrength = I1F15;
+pub type Embouchure = U0F16;
+pub type BlowStrength = U0F16;
 
 /// All lengths in mm's
 #[derive(Debug, Clone, Copy)]
@@ -105,9 +108,8 @@ pub struct TrumpetDefinition {
 #[derive(Debug, Default)]
 pub struct TrumpetState {
     valves: Valves,
-    volume: U4F4,
-    embouchure_tightness: I1F15,
-    lung_pressure: I1F15,
+    embouchure_tightness: Embouchure,
+    lung_pressure: BlowStrength,
 }
 
 impl TrumpetState {
@@ -175,6 +177,10 @@ impl TrumpetState {
         None
     }
 
+    pub fn volume(&self) -> U4F4 {
+        U4F4::lossy_from(self.lung_pressure)
+    }
+
     pub fn update(&mut self, event: TrumpetEvent) {
         self.valves.update(event);
 
@@ -222,16 +228,31 @@ impl Trumpet {
         Some(fundamental * U24F8::from_num(overtone + 1))
     }
 
-    pub fn update(&mut self, events: &[TrumpetEvent]) -> Vec<CommandMessage, 4> {
+    pub fn update(&mut self, events: &[TrumpetEvent]) -> Vec<Command, 4> {
         for &event in events {
             self.state.update(event);
         }
 
         let overtone = self.state.overtone();
         let tube_length = self.state.tube_length(&self.def);
-
         let fundamental = self.def.speed_of_sound / (U24F8::from_num(2) * U24F8::from(tube_length));
 
-        todo!()
+        let frequency = fundamental * U24F8::from_num(overtone.unwrap_or(0));
+        let volume = self.state.volume();
+
+        let mut commands = Vec::new();
+        // assume a change in state happened and the synth needs to be reconfigured
+        // TODO: optimize?
+        if events.len() > 0 {
+            // commands.push(CommandMessage::SetAttack(volume));
+            commands
+                .push(Command {
+                    address: 0x0,
+                    message: CommandMessage::Frequency(U12F4::wrapping_from_num(frequency), volume),
+                })
+                .expect("single push in length 4 vec is safe");
+        }
+
+        commands
     }
 }

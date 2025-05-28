@@ -85,7 +85,7 @@ impl AudioSetup {
     }
 
     pub fn initialize_audio(&mut self) {
-        if !*self.is_audio_initialized_signal.read() {
+        if !self.is_audio_initialized() {
             drop(
                 self.ctx_signal
                     .borrow_mut()
@@ -111,8 +111,8 @@ fn app() -> Element {
     let first_valve_signal = use_signal(|| false);
     let second_valve_signal = use_signal(|| false);
     let third_valve_signal = use_signal(|| false);
-    let embouchure_signal = use_signal(|| 0.0);
-    let blowstrength_signal = use_signal(|| 0.0);
+    let mut embouchure_signal = use_signal(|| 0.0);
+    let mut blowstrength_signal = use_signal(|| 0.0);
 
     let inputs = WebInputs {
         first_valve_signal,
@@ -121,6 +121,8 @@ fn app() -> Element {
         embouchure_signal,
         blowstrength_signal,
     };
+
+    TODO: implement keyboard control to make testing easier / possible
 
     use_future({
         let inputs = inputs.clone();
@@ -162,6 +164,36 @@ fn app() -> Element {
                 {valve_button(inputs.first_valve_signal)}
                 {valve_button(inputs.second_valve_signal)}
                 {valve_button(inputs.third_valve_signal)}
+
+                div {
+                    "embouchure"
+                    input {
+                        r#type: "range",
+                        // value: "{value}",
+                        min: "0.0",
+                        max: "0.999",
+                        step: "0.001",
+                        oninput: move |event| {
+                            let incoming_value = event.value().parse::<f64>().unwrap();
+                            embouchure_signal.set(incoming_value)
+                        }
+                    }
+                }
+
+                div {
+                    "blow strength"
+                    input {
+                        r#type: "range",
+                        // value: "{value}",
+                        min: "0.0",
+                        max: "0.999",
+                        step: "0.001",
+                        oninput: move |event| {
+                            let  incoming_value = event.value().parse::<f64>().unwrap();
+                            blowstrength_signal.set(incoming_value)
+                        }
+                    }
+                }
 
                 if !audio_setup.is_audio_initialized() {
                     button {

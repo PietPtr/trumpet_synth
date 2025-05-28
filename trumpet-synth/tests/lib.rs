@@ -36,6 +36,6 @@ fn test_trumpet_frequency() {
 
     interface.run();
 
-    TODO: resolve todo's in test impls of hardware, make mutexes for state?
-    TODO: make sure the inputs change between calls to run and observe behaviour
+    // TODO: resolve todo's in test impls of hardware, make mutexes for state?
+    // TODO: make sure the inputs change between calls to run and observe behaviour
 }

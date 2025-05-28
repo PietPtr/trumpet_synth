@@ -1,5 +1,5 @@
 use dioxus::signals::{Readable, Signal};
-use fixed::types::I1F15;
+use fixed::types::U0F16;
 use trumpet_synth::{
     io,
     trumpet::{BlowStrength, Embouchure, Valve},
@@ -47,10 +47,10 @@ impl io::Inputs for WebInputs {
     }
 
     fn embouchure(&mut self) -> Embouchure {
-        I1F15::from_num(*self.embouchure_signal.read())
+        U0F16::from_num(*self.embouchure_signal.read())
     }
 
     fn blowstrength(&mut self) -> BlowStrength {
-        I1F15::from_num(*self.blowstrength_signal.read())
+        U0F16::from_num(*self.blowstrength_signal.read())
     }
 }
