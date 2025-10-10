@@ -18,6 +18,10 @@ impl Inputs for TestInputs {
         todo!()
     }
 
+    fn blow(&mut self) -> bool {
+        todo!()
+    }
+
     fn embouchure(&mut self) -> trumpet_synth::trumpet::Embouchure {
         todo!()
     }

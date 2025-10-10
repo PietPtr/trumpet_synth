@@ -33,6 +33,7 @@ pub struct WebInputs {
     pub first_valve_signal: Signal<bool>,
     pub second_valve_signal: Signal<bool>,
     pub third_valve_signal: Signal<bool>,
+    pub blow_signal: Signal<bool>,
     pub embouchure_signal: Signal<f64>,
     pub blowstrength_signal: Signal<f64>,
 }
@@ -44,6 +45,10 @@ impl io::Inputs for WebInputs {
             Valve::Second => (*self.second_valve_signal.read()).into(),
             Valve::Third => (*self.third_valve_signal.read()).into(),
         }
+    }
+
+    fn blow(&mut self) -> bool {
+        return (*self.blow_signal.read()).into();
     }
 
     fn embouchure(&mut self) -> Embouchure {

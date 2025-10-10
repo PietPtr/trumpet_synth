@@ -1,10 +1,10 @@
 use common::debouncer::Debouncer;
-use fixed::types::{I1F15, U0F16};
+use fixed::types::U0F16;
 use heapless::Vec;
 
 use crate::{
     io::{Fifo, Inputs, TrumpetInputState, IO},
-    trumpet::{BlowStrength, Embouchure, Trumpet, TrumpetDefinition, Valve, BFLAT_TRUMPET},
+    trumpet::{BlowStrength, Embouchure, Trumpet, Valve, BFLAT_TRUMPET},
 };
 
 // TODO: different place for some of these structs/impls?
@@ -14,7 +14,8 @@ use crate::{
 pub struct TrumpetInputs<INPUTS> {
     inputs: INPUTS,
     valve_debouncers: [Debouncer; 3],
-    events: Vec<TrumpetEvent, 4>,
+    blow_debouncer: Debouncer,
+    events: Vec<TrumpetEvent, 8>,
     last_trumpet_state: TrumpetInputState,
 }
 
@@ -22,6 +23,8 @@ const DEBOUNCE_TIME: u32 = 10;
 
 #[derive(Debug, Clone, Copy)]
 pub enum TrumpetEvent {
+    BlowUp,
+    BlowDown,
     ValveUp(Valve),
     ValveDown(Valve),
     EmbouchureChange(Embouchure),
@@ -34,6 +37,7 @@ impl<INPUTS: Inputs> TrumpetInputs<INPUTS> {
         Self {
             inputs,
             valve_debouncers: [Debouncer::new(DEBOUNCE_TIME); 3],
+            blow_debouncer: Debouncer::new(DEBOUNCE_TIME),
             events: Vec::new(),
             last_trumpet_state: TrumpetInputState::default(),
         }
@@ -43,19 +47,29 @@ impl<INPUTS: Inputs> TrumpetInputs<INPUTS> {
         for (id, debouncer) in self.valve_debouncers.iter_mut().enumerate() {
             debouncer.update(state.valve(Valve::from(id)));
         }
+
+        self.blow_debouncer.update(state.blow)
     }
 
     pub fn events(&self) -> &[TrumpetEvent] {
         &self.events
     }
 
-    fn debouncer_is_high(&self, valve: Valve) -> bool {
-        let valve = valve as usize;
-        let Some(debouncer) = self.valve_debouncers.get(valve) else {
-            panic!("No debouncer found for KeyID {:?}.", valve);
+    fn debouncer_is_high(debouncer: Option<&Debouncer>) -> bool {
+        let Some(debouncer) = debouncer else {
+            panic!("No debouncer found.");
         };
 
         debouncer.is_high().unwrap_or(false)
+    }
+
+    fn valve_debouncer_is_high(&self, valve: Valve) -> bool {
+        let debouncer_index = valve as usize;
+        Self::debouncer_is_high(self.valve_debouncers.get(debouncer_index))
+    }
+
+    fn blow_debouncer_is_high(&self) -> bool {
+        Self::debouncer_is_high(Some(&self.blow_debouncer))
     }
 
     pub fn update_events(&mut self) {
@@ -63,11 +77,10 @@ impl<INPUTS: Inputs> TrumpetInputs<INPUTS> {
 
         self.update_debouncers(current_state);
 
-        current_state.first = self.debouncer_is_high(Valve::First);
-        current_state.second = self.debouncer_is_high(Valve::Second);
-        current_state.third = self.debouncer_is_high(Valve::Third);
-
-        // TODO: make logic for detecting valve changes / changes in pot values and add them to the events list
+        current_state.first = self.valve_debouncer_is_high(Valve::First);
+        current_state.second = self.valve_debouncer_is_high(Valve::Second);
+        current_state.third = self.valve_debouncer_is_high(Valve::Third);
+        current_state.blow = self.blow_debouncer_is_high();
 
         self.events.clear();
 
@@ -85,10 +98,19 @@ impl<INPUTS: Inputs> TrumpetInputs<INPUTS> {
                 continue;
             };
 
-            self.events
-                .push(event)
-                .ok()
-                .expect("No more than three valves and 4 elements in events so should be fine");
+            self.events.push(event).ok().expect("Valve event dropped");
+        }
+
+        let event = if !self.last_trumpet_state.blow && current_state.blow {
+            Some(TrumpetEvent::BlowDown)
+        } else if self.last_trumpet_state.blow && !current_state.blow {
+            Some(TrumpetEvent::BlowUp)
+        } else {
+            None
+        };
+
+        if let Some(event) = event {
+            self.events.push(event).ok().expect("Blow event dropped");
         }
 
         // TODO: make const
@@ -99,20 +121,21 @@ impl<INPUTS: Inputs> TrumpetInputs<INPUTS> {
                 || (current.saturating_sub(last) > pot_threshold)
         };
 
-        // TODO: one of these can in theory be dropped and may cause weirdness
         if enough_change(
             self.last_trumpet_state.blowstrength,
             current_state.blowstrength,
         ) {
             self.events
                 .push(TrumpetEvent::BlowStrengthChange(current_state.blowstrength))
-                .ok();
+                .ok()
+                .expect("Blowstrength event dropped");
         }
 
         if enough_change(self.last_trumpet_state.embouchure, current_state.embouchure) {
             self.events
                 .push(TrumpetEvent::EmbouchureChange(current_state.embouchure))
-                .ok();
+                .ok()
+                .expect("Embouchure event dropped");
         }
 
         self.last_trumpet_state = current_state;
@@ -141,10 +164,10 @@ impl<FIFO: Fifo, INPUTS: Inputs> TrumpetInterface<FIFO, INPUTS> {
         let commands = self.trumpet.update(self.inputs.events());
 
         if self.inputs.events().len() > 0 {
-            tracing::info!("events: {:?}", self.inputs.events());
+            // tracing::info!("events: {:?}", self.inputs.events());
         }
         if commands.len() > 0 {
-            tracing::info!("commands: {commands:?}");
+            // tracing::info!("commands: {commands:?}");
         }
 
         for command in commands {

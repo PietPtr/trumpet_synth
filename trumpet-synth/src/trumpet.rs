@@ -1,10 +1,8 @@
 //! Model of the tubing of a trumpet and associated types
 
-use core::slice::SliceIndex;
-
 use fixed::{
-    traits::{Fixed, LossyFrom},
-    types::{I12F4, I1F15, I24F8, U0F16, U12F4, U1F15, U24F8, U4F4},
+    traits::LossyFrom,
+    types::{I1F15, U0F16, U12F4, U24F8, U4F4},
 };
 use heapless::Vec;
 use rytmos_synth::commands::{Command, CommandMessage};
@@ -108,6 +106,7 @@ pub struct TrumpetDefinition {
 #[derive(Debug, Default)]
 pub struct TrumpetState {
     valves: Valves,
+    blow: bool,
     embouchure_tightness: Embouchure,
     lung_pressure: BlowStrength,
 }
@@ -144,32 +143,36 @@ impl TrumpetState {
         // TODO: more overtones for the fun?
         // TODO: this function can use a lot of experimentation
 
+        if !self.blow {
+            return None;
+        }
+
         if self.lung_pressure > I1F15::from_num(0.1) {
-            if self.embouchure_tightness > I1F15::from_num(0.8) {
+            if self.embouchure_tightness > I1F15::from_num(0.6) {
                 return Some(7);
             }
 
-            if self.embouchure_tightness > I1F15::from_num(0.7) {
+            if self.embouchure_tightness > I1F15::from_num(0.5) {
                 return Some(6);
             }
 
-            if self.embouchure_tightness > I1F15::from_num(0.6) {
+            if self.embouchure_tightness > I1F15::from_num(0.4) {
                 return Some(5);
             }
 
-            if self.embouchure_tightness > I1F15::from_num(0.5) {
+            if self.embouchure_tightness > I1F15::from_num(0.3) {
                 return Some(4);
             }
 
-            if self.embouchure_tightness > I1F15::from_num(0.4) {
+            if self.embouchure_tightness > I1F15::from_num(0.2) {
                 return Some(3);
             }
 
-            if self.embouchure_tightness > I1F15::from_num(0.3) {
+            if self.embouchure_tightness > I1F15::from_num(0.1) {
                 return Some(2);
             }
 
-            if self.embouchure_tightness > I1F15::from_num(0.2) {
+            if self.embouchure_tightness >= I1F15::from_num(0.0) {
                 return Some(1);
             }
         }
@@ -187,6 +190,8 @@ impl TrumpetState {
         match event {
             TrumpetEvent::EmbouchureChange(fixed_i16) => self.embouchure_tightness = fixed_i16,
             TrumpetEvent::BlowStrengthChange(fixed_i16) => self.lung_pressure = fixed_i16,
+            TrumpetEvent::BlowUp => self.blow = false,
+            TrumpetEvent::BlowDown => self.blow = true,
             _ => (),
         }
     }
@@ -198,13 +203,13 @@ pub const BFLAT_TRUMPET: TrumpetDefinition = TrumpetDefinition {
     first_valve_tube: U12F4::unwrapped_from_str("160"),
     second_valve_tube: U12F4::unwrapped_from_str("70"),
     third_valve_tube: U12F4::unwrapped_from_str("270"),
-    speed_of_sound: U24F8::unwrapped_from_str("34300"),
+    speed_of_sound: U24F8::unwrapped_from_str("343000"),
 };
 
 #[derive(Debug)]
 pub struct Trumpet {
     def: TrumpetDefinition,
-    state: TrumpetState,
+    pub state: TrumpetState,
 }
 
 impl Trumpet {
@@ -223,7 +228,7 @@ impl Trumpet {
         };
 
         let tube_length = self.state.tube_length(&self.def);
-        let fundamental = self.def.speed_of_sound / (U24F8::from_num(2) * U24F8::from(tube_length));
+        let fundamental = self.def.speed_of_sound / (U24F8::from(tube_length));
 
         Some(fundamental * U24F8::from_num(overtone + 1))
     }
@@ -233,22 +238,22 @@ impl Trumpet {
             self.state.update(event);
         }
 
-        let overtone = self.state.overtone();
-        let tube_length = self.state.tube_length(&self.def);
-        let fundamental = self.def.speed_of_sound / (U24F8::from_num(2) * U24F8::from(tube_length));
-
-        let frequency = fundamental * U24F8::from_num(overtone.unwrap_or(0));
+        let frequency = self.frequency();
         let volume = self.state.volume();
 
         let mut commands = Vec::new();
         // assume a change in state happened and the synth needs to be reconfigured
-        // TODO: optimize?
         if events.len() > 0 {
-            // commands.push(CommandMessage::SetAttack(volume));
+            let frequency = if let Some(f) = frequency {
+                U12F4::wrapping_from_num(f)
+            } else {
+                U12F4::ZERO
+            };
+
             commands
                 .push(Command {
                     address: 0x0,
-                    message: CommandMessage::Frequency(U12F4::wrapping_from_num(frequency), volume),
+                    message: CommandMessage::Frequency(frequency, volume),
                 })
                 .expect("single push in length 4 vec is safe");
         }

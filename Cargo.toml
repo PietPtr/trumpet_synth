@@ -2,6 +2,9 @@
 members = ["trumpet-synth", "web/wasm-audio", "web/frontend", "rp2040"]
 resolver = "2"
 
+[workspace.dependencies]
+rytmos-synth = { path = "../rytmos/rytmos-synth" }
+rytmos-engrave = { path = "../rytmos/rytmos-engrave" }
 
 # cargo build/run
 [profile.dev]

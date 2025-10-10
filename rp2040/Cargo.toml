@@ -26,7 +26,7 @@ heapless = "0.7.16"
 rp2040-boot2 = "0.2.1"
 embedded-graphics = "0.8.1"
 # TODO: move these to a library repo and have repo per "product"
-rytmos-synth = { git = "https://github.com/PietPtr/Rytmos.git" }
+rytmos-synth.workspace = true
 common = { git = "https://github.com/PietPtr/Rytmos.git", features = [
     "rp-pico",
 ] }

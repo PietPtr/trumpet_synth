@@ -21,6 +21,7 @@ pub trait Fifo {
 
 pub trait Inputs {
     fn valve(&mut self, valve: Valve) -> bool;
+    fn blow(&mut self) -> bool;
     fn embouchure(&mut self) -> Embouchure;
     fn blowstrength(&mut self) -> BlowStrength;
 }
@@ -30,6 +31,7 @@ pub(crate) struct TrumpetInputState {
     pub first: bool,
     pub second: bool,
     pub third: bool,
+    pub blow: bool,
     pub embouchure: Embouchure,
     pub blowstrength: BlowStrength,
 }
@@ -40,6 +42,7 @@ impl TrumpetInputState {
             first: inputs.valve(Valve::First),
             second: inputs.valve(Valve::Second),
             third: inputs.valve(Valve::Third),
+            blow: inputs.blow(),
             embouchure: inputs.embouchure(),
             blowstrength: inputs.blowstrength(),
         }

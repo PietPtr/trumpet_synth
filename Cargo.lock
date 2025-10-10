@@ -3170,7 +3170,6 @@ checksum = "8a0d197bd2c9dc6e53b84da9556a69ba4cdfab8619eb41a8bd1cc2027a0f6b1d"
 [[package]]
 name = "rytmos-engrave"
 version = "0.1.0"
-source = "git+https://github.com/PietPtr/Rytmos.git#e0ad75e060a9efea2c080c33096a99985dbea870"
 dependencies = [
  "defmt 0.3.100",
  "embedded-graphics",
@@ -3184,7 +3183,6 @@ dependencies = [
 [[package]]
 name = "rytmos-symbols"
 version = "0.1.0"
-source = "git+https://github.com/PietPtr/Rytmos.git#e0ad75e060a9efea2c080c33096a99985dbea870"
 dependencies = [
  "embedded-graphics",
 ]
@@ -3192,7 +3190,6 @@ dependencies = [
 [[package]]
 name = "rytmos-synth"
 version = "0.1.0"
-source = "git+https://github.com/PietPtr/Rytmos.git#e0ad75e060a9efea2c080c33096a99985dbea870"
 dependencies = [
  "derivative",
  "fixed",

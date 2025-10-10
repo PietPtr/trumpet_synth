@@ -52,7 +52,7 @@ impl Processor {
         port.add_event_listener_with_callback("message", message_closure.as_ref().unchecked_ref())
             .unwrap();
 
-        log::info!("Created Synth");
+        log::info!("Created Synth '{port:#?}'");
 
         Self {
             _port: port,

@@ -6,10 +6,11 @@
 #![allow(non_snake_case)]
 
 use core::borrow::BorrowMut;
-use std::sync::{Arc, Mutex, OnceLock};
-use std::time::{Duration, Instant};
+use std::sync::{Arc, Mutex};
+use std::time::Duration;
 
 use dioxus::prelude::*;
+#[allow(unused_imports)]
 use tracing::info;
 use trumpet_synth::interface::TrumpetInterface;
 use trumpet_synth::io::IO;
@@ -132,12 +133,12 @@ impl InputBehavior {
         // keys comma, period, slash for the valves
         // embouchure slider is asdfghj
         // blowstrength slider is zxcvbnm
-        // first connect the slider positions to these button presses,
-        // then somehow model the spring pushing the sliders back to the zero position
+        // TODO: map embouchure and blowstrength to xbox controller joystick
         match event.code().as_str() {
             "Comma" => self.signals.first_valve_signal.set(bool_to_set),
             "Period" => self.signals.second_valve_signal.set(bool_to_set),
             "Slash" => self.signals.third_valve_signal.set(bool_to_set),
+            "Space" => self.signals.blow_signal.set(bool_to_set),
             _ => (),
         }
 
@@ -225,18 +226,18 @@ fn app() -> Element {
     let first_valve_signal = use_signal(|| false);
     let second_valve_signal = use_signal(|| false);
     let third_valve_signal = use_signal(|| false);
-    let mut embouchure_signal = use_signal(|| 0.0);
-    let mut blowstrength_signal = use_signal(|| 0.0);
+    let blow_signal = use_signal(|| false);
+    let embouchure_signal = use_signal(|| 0.0);
+    let blowstrength_signal = use_signal(|| 0.0);
 
     let inputs = WebInputs {
         first_valve_signal,
         second_valve_signal,
         third_valve_signal,
+        blow_signal,
         embouchure_signal,
         blowstrength_signal,
     };
-
-    // TODO: implement keyboard control to make testing easier / possible
 
     let input_behavior = Arc::new(Mutex::new(InputBehavior::new(inputs.clone())));
 
@@ -275,13 +276,10 @@ fn app() -> Element {
     });
 
     use_future({
-        let inputs = inputs.clone();
         let input_behavior = Arc::clone(&input_behavior);
         move || {
-            let inputs = inputs.clone();
             let input_behavior = Arc::clone(&input_behavior);
             async move {
-                //
                 let keydown_closure: Closure<dyn FnMut(web_sys::KeyboardEvent)> = Closure::new({
                     let input_behavior = Arc::clone(&input_behavior);
                     move |event: web_sys::KeyboardEvent| {
@@ -333,12 +331,16 @@ fn app() -> Element {
                     "Trumpet Synth"
                 }
 
-                {valve_button(inputs.first_valve_signal)}
-                {valve_button(inputs.second_valve_signal)}
-                {valve_button(inputs.third_valve_signal)}
+                div {
+                    style: "display: flex",
+                    {valve_button(inputs.first_valve_signal)}
+                    {valve_button(inputs.second_valve_signal)}
+                    {valve_button(inputs.third_valve_signal)}
+                }
 
-                {slider(30., inputs.blowstrength_signal)}
-                {slider(30., inputs.embouchure_signal)}
+                {slider(30., inputs.embouchure_signal, "red")}
+                {slider(30., inputs.blowstrength_signal, "blue")}
+                {valve_button(inputs.blow_signal)}
 
                 if !audio_setup.is_audio_initialized() {
                     button {
@@ -367,12 +369,12 @@ fn valve_button(valve: Signal<bool>) -> Element {
     }
 }
 
-fn slider(width_scale: f64, value: Signal<f64>) -> Element {
+fn slider(width_scale: f64, value: Signal<f64>, color: &str) -> Element {
     let width = *value.read() * width_scale + 0.5;
     rsx! {
         div {
             class: format!("slider"),
-            style: format!("width: {}vw", width),
+            style: format!("width: {}vw; background-color: {}", width, color),
         }
     }
 }

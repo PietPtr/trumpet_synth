@@ -7,8 +7,8 @@ edition = "2021"
 fixed = "1.27.0"
 log = "0.4.22"
 heapless = "0.7.16"
-rytmos-engrave = { git = "https://github.com/PietPtr/Rytmos.git" }
-rytmos-synth = { git = "https://github.com/PietPtr/Rytmos.git" }
+rytmos-engrave.workspace = true
+rytmos-synth.workspace = true
 common = { git = "https://github.com/PietPtr/Rytmos.git", features = [
     "rp-pico",
 ] }
