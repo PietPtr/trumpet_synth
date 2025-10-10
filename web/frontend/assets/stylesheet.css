@@ -3,3 +3,23 @@
 h1 {
     font-family: "Fira Sans", Arial, NanumBarunGothic, sans-serif;
 }
+
+.valve {
+    width: 5vw;
+    height: 5vw;
+    margin: 1vw;
+}
+
+.valve-up {
+    background-color: yellow;
+}
+
+.valve-down {
+    background-color: orange;
+}
+
+.slider {
+    height: 5vw;
+    background-color: green;
+    margin: 1vw;
+}

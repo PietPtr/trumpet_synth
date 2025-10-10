@@ -111,7 +111,7 @@ impl<INPUTS: Inputs> TrumpetInputs<INPUTS> {
 
         if enough_change(self.last_trumpet_state.embouchure, current_state.embouchure) {
             self.events
-                .push(TrumpetEvent::EmbouchureChange(current_state.blowstrength))
+                .push(TrumpetEvent::EmbouchureChange(current_state.embouchure))
                 .ok();
         }
 
