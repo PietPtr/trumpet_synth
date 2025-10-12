@@ -1,3 +1,4 @@
+use fixed::types::U0F16;
 use trumpet_synth::{
     interface::TrumpetEvent,
     trumpet::{self, BlowStrength, Embouchure, Trumpet, BFLAT_TRUMPET},

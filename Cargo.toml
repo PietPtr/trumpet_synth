@@ -5,6 +5,10 @@ resolver = "2"
 [workspace.dependencies]
 rytmos-synth = { path = "../rytmos/rytmos-synth" }
 rytmos-engrave = { path = "../rytmos/rytmos-engrave" }
+common = { path = "../rytmos/rytmos-pico/common" }
+# common = { git = "https://github.com/PietPtr/Rytmos.git", features = [
+#     "rp-pico",
+# ] }
 
 # cargo build/run
 [profile.dev]

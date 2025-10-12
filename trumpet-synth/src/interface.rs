@@ -1,6 +1,7 @@
 use common::debouncer::Debouncer;
-use fixed::types::U0F16;
+use fixed::types::{U0F16, U12F4, U4F4};
 use heapless::Vec;
+use rytmos_synth::commands::Command;
 
 use crate::{
     io::{Fifo, Inputs, TrumpetInputState, IO},
@@ -29,6 +30,32 @@ pub enum TrumpetEvent {
     ValveDown(Valve),
     EmbouchureChange(Embouchure),
     BlowStrengthChange(BlowStrength),
+}
+
+#[cfg(feature = "defmt")]
+impl defmt::Format for TrumpetEvent {
+    fn format(&self, fmt: defmt::Formatter) {
+        match self {
+            TrumpetEvent::BlowUp => defmt::write!(fmt, "TrumpetEvent::BlowUp"),
+            TrumpetEvent::BlowDown => defmt::write!(fmt, "TrumpetEvent::BlowDown"),
+            TrumpetEvent::ValveUp(v) => {
+                defmt::write!(fmt, "TrumpetEvent::ValveUp({:?})", Into::<usize>::into(*v))
+            }
+            TrumpetEvent::ValveDown(v) => {
+                defmt::write!(
+                    fmt,
+                    "TrumpetEvent::ValveDown({:?})",
+                    Into::<usize>::into(*v)
+                )
+            }
+            TrumpetEvent::EmbouchureChange(e) => {
+                defmt::write!(fmt, "TrumpetEvent::EmbouchureChange({:?})", e.to_bits())
+            }
+            TrumpetEvent::BlowStrengthChange(b) => {
+                defmt::write!(fmt, "TrumpetEvent::BlowStrengthChange({:?})", b.to_bits())
+            }
+        }
+    }
 }
 
 // TODO: like Clavier in polypicophonic, turns embedded IO to a more or less event based thing
@@ -114,7 +141,7 @@ impl<INPUTS: Inputs> TrumpetInputs<INPUTS> {
         }
 
         // TODO: make const
-        let pot_threshold: U0F16 = U0F16::from_num(100. / 4096.);
+        let pot_threshold: U0F16 = U0F16::from_num(20. / 65536.);
 
         let enough_change = |last: U0F16, current: U0F16| {
             ((last.saturating_sub(current)) > pot_threshold)
@@ -129,6 +156,7 @@ impl<INPUTS: Inputs> TrumpetInputs<INPUTS> {
                 .push(TrumpetEvent::BlowStrengthChange(current_state.blowstrength))
                 .ok()
                 .expect("Blowstrength event dropped");
+        } else {
         }
 
         if enough_change(self.last_trumpet_state.embouchure, current_state.embouchure) {
@@ -164,10 +192,10 @@ impl<FIFO: Fifo, INPUTS: Inputs> TrumpetInterface<FIFO, INPUTS> {
         let commands = self.trumpet.update(self.inputs.events());
 
         if self.inputs.events().len() > 0 {
-            // tracing::info!("events: {:?}", self.inputs.events());
+            // defmt::info!("events: {:?}", self.inputs.events());
         }
         if commands.len() > 0 {
-            // tracing::info!("commands: {commands:?}");
+            // defmt::info!("commands: {:?}", commands.len());
         }
 
         for command in commands {

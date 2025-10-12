@@ -15,6 +15,8 @@ common = { git = "https://github.com/PietPtr/Rytmos.git", features = [
 enum-iterator = "2.1.0"
 # TODO: not no_std
 tracing = { version = "0.1.41", optional = true }
+defmt = { version = "1.0.1", optional = true }
 
 [features]
 std = ["tracing"]
+defmt = ["dep:defmt"]

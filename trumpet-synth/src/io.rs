@@ -5,6 +5,8 @@ pub struct IO<FIFO, INPUTS> {
     pub inputs: INPUTS,
 }
 
+// TODO: output with RGB LED for feedback or mode display
+
 impl<FIFO, INPUTS> IO<FIFO, INPUTS>
 where
     FIFO: Fifo,
@@ -27,13 +29,13 @@ pub trait Inputs {
 }
 
 #[derive(Debug, Default, Clone, Copy)]
-pub(crate) struct TrumpetInputState {
-    pub first: bool,
-    pub second: bool,
-    pub third: bool,
-    pub blow: bool,
-    pub embouchure: Embouchure,
-    pub blowstrength: BlowStrength,
+pub struct TrumpetInputState {
+    pub first: bool,                // Pushbutton
+    pub second: bool,               // Pushbutton
+    pub third: bool,                // Pushbutton
+    pub blow: bool,                 // Pushbutton
+    pub embouchure: Embouchure,     // Linear potentiometer
+    pub blowstrength: BlowStrength, // Linear potentiometer
 }
 
 impl TrumpetInputState {
