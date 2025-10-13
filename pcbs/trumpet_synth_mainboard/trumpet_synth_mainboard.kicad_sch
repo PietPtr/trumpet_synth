@@ -3551,7 +3551,7 @@
 			(embedded_fonts no)
 		)
 	)
-	(text "TODO:\n- make SWD pins accessible from case\n- make power switch accessible from case\n- double check linpot pins used\nx jack footprint is wrong"
+	(text "TODO:\nx make SWD pins accessible from case\nx make power switch accessible from case\nx double check linpot pins used\nx jack footprint is wrong"
 		(exclude_from_sim no)
 		(at 187.452 21.844 0)
 		(effects
