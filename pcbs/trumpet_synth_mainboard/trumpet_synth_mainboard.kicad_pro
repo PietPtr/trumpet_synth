@@ -506,7 +506,7 @@
       "plot": "gerbers",
       "pos_files": "",
       "specctra_dsn": "",
-      "step": "",
+      "step": "../../../../../Documents/3DPrinten/trumpet_synth_mainboard.stl",
       "svg": "",
       "vrml": ""
     },

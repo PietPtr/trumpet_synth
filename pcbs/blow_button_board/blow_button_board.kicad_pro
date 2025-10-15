@@ -490,7 +490,7 @@
       "plot": "gerbers",
       "pos_files": "",
       "specctra_dsn": "",
-      "step": "",
+      "step": "../../../../../Documents/3DPrinten/blow_button_board.stl",
       "svg": "",
       "vrml": ""
     },
