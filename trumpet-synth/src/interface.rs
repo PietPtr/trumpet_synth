@@ -1,7 +1,6 @@
 use common::debouncer::Debouncer;
-use fixed::types::{U0F16, U12F4, U4F4};
+use fixed::types::U0F16;
 use heapless::Vec;
-use rytmos_synth::commands::Command;
 
 use crate::{
     io::{Fifo, Inputs, TrumpetInputState, IO},
@@ -58,7 +57,6 @@ impl defmt::Format for TrumpetEvent {
     }
 }
 
-// TODO: like Clavier in polypicophonic, turns embedded IO to a more or less event based thing
 impl<INPUTS: Inputs> TrumpetInputs<INPUTS> {
     pub fn new(inputs: INPUTS) -> Self {
         Self {

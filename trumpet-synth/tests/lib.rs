@@ -1,23 +1,26 @@
-use std::sync::{
-    atomic::{AtomicBool, AtomicI16, AtomicU16, Ordering},
-    Arc, Mutex,
+use std::{
+    collections::VecDeque,
+    sync::{
+        atomic::{AtomicBool, AtomicU16, Ordering},
+        Arc, Mutex,
+    },
 };
 
 use rytmos_synth::{commands::Command, synth::Synth};
 use trumpet_synth::{
-    interface::{TrumpetEvent, TrumpetInterface},
+    interface::TrumpetInterface,
     io::{Fifo, Inputs, IO},
     trumpet::{BlowStrength, Embouchure, Valve},
 };
 
 struct TestFifo {
-    fifo: Arc<Mutex<Vec<u32>>>,
+    fifo: Arc<Mutex<VecDeque<u32>>>,
 }
 
 impl Fifo for TestFifo {
     fn write(&mut self, value: u32) {
         let mut guard = self.fifo.lock().unwrap();
-        guard.push(value);
+        guard.push_back(value);
     }
 }
 
@@ -67,22 +70,22 @@ pub enum TesterInput {
 
 pub struct TrumpetSynthTester {
     synthesizer: trumpet_synth::synth::TrumpetSynth,
-    fifo: Arc<Mutex<Vec<u32>>>,
+    fifo: Arc<Mutex<VecDeque<u32>>>,
     inputs: Arc<SharedTestInputs>,
     interface: TrumpetInterface<TestFifo, TestInputs>,
-    tester_input: Vec<TesterInput>,
+    tester_input: VecDeque<TesterInput>,
 }
 
 impl TrumpetSynthTester {
-    pub fn new(tester_input: Vec<TesterInput>) -> Self {
-        let fifo = Arc::new(Mutex::new(Vec::new()));
+    pub fn new(tester_input: VecDeque<TesterInput>) -> Self {
+        let fifo = Arc::new(Mutex::new(VecDeque::new()));
         let inputs = Arc::new(SharedTestInputs {
             blow: AtomicBool::new(false),
             valve1: AtomicBool::new(false),
             valve2: AtomicBool::new(false),
             valve3: AtomicBool::new(false),
             embouchure: AtomicU16::new(0),
-            blowstrength: AtomicU16::new(2048),
+            blowstrength: AtomicU16::new(0),
         });
         let interface = TrumpetInterface::new(IO {
             fifo: TestFifo {
@@ -105,15 +108,17 @@ impl TrumpetSynthTester {
     pub fn run(&mut self) -> Vec<i16> {
         let mut result = Vec::new();
 
-        while let Some(inp) = self.tester_input.pop() {
+        while let Some(inp) = self.tester_input.pop_front() {
             dbg!(&inp);
             result.extend(self.handle_input(inp));
 
             self.interface.run();
+
             let mut queue = self.fifo.lock().unwrap();
 
-            while let Some(command_as_u32) = queue.pop() {
+            while let Some(command_as_u32) = queue.pop_front() {
                 let command = Command::deserialize(command_as_u32).expect("Invalid command");
+                dbg!(&command);
                 self.synthesizer.run_command(command);
             }
         }
@@ -127,7 +132,7 @@ impl TrumpetSynthTester {
         match input {
             TesterInput::NoInput { samples } => {
                 for _ in 0..samples {
-                    result.push(self.synthesizer.next().to_bits())
+                    result.push(self.synthesizer.next().to_bits());
                 }
             }
             TesterInput::Blow(state) => self.inputs.blow.store(state, Ordering::Relaxed),
@@ -150,20 +155,38 @@ impl TrumpetSynthTester {
 
 #[test]
 fn test_trumpet_frequency() {
-    let mut tester = TrumpetSynthTester::new(vec![
-        TesterInput::Blow(true),
-        TesterInput::NoInput { samples: 33 },
-        TesterInput::Blow(false),
-        TesterInput::NoInput { samples: 11 },
-        TesterInput::Valve {
-            valve: Valve::First,
-            state: true,
-        },
-        TesterInput::Blow(true),
-        TesterInput::NoInput { samples: 33 },
-        TesterInput::Blow(false),
-        TesterInput::NoInput { samples: 11 },
-    ]);
+    let mut tester = TrumpetSynthTester::new(
+        vec![
+            TesterInput::Embouchure(0x0fff),
+            TesterInput::Blowstrength(0xffff),
+            TesterInput::Blow(true),
+            TesterInput::Blow(true),
+            TesterInput::Blow(true),
+            TesterInput::Blow(true),
+            TesterInput::Blow(true),
+            TesterInput::Blow(true),
+            TesterInput::Blow(true),
+            TesterInput::Blow(true),
+            TesterInput::Blow(true),
+            TesterInput::Blow(true),
+            TesterInput::Blow(true),
+            TesterInput::Blow(true),
+            TesterInput::Blow(true),
+            TesterInput::Blow(true),
+            TesterInput::NoInput { samples: 400 },
+            // TesterInput::Blow(false),
+            // TesterInput::NoInput { samples: 11 },
+            // TesterInput::Valve {
+            //     valve: Valve::First,
+            //     state: true,
+            // },
+            // TesterInput::Blow(true),
+            // TesterInput::NoInput { samples: 33 },
+            // TesterInput::Blow(false),
+            // TesterInput::NoInput { samples: 11 },
+        ]
+        .into(),
+    );
 
     let result = tester.run();
 
