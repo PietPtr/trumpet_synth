@@ -480,6 +480,7 @@ name = "common"
 version = "0.1.0"
 dependencies = [
  "defmt 0.3.100",
+ "embedded-hal 0.2.7",
  "fugit",
  "pio",
  "pio-proc",
@@ -488,7 +489,7 @@ dependencies = [
 [[package]]
 name = "common"
 version = "0.1.0"
-source = "git+https://github.com/PietPtr/Rytmos.git#e0ad75e060a9efea2c080c33096a99985dbea870"
+source = "git+https://github.com/PietPtr/Rytmos.git#42c6b5cf48060ebc9354ec3b7e13b93ef3b3a77c"
 dependencies = [
  "defmt 0.3.100",
  "fugit",

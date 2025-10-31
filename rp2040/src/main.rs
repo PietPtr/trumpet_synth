@@ -18,7 +18,8 @@ use io::{Rp2040Inputs, SioFifo};
 use panic_probe as _;
 use pio_proc::pio_file;
 use rgb::TrumpetRgbLed;
-use rp2040_hal::gpio::{DynFunction, DynPinId, Pin, PullDown};
+use rp2040_hal::gpio::bank0::Gpio0;
+use rp2040_hal::gpio::{DynFunction, DynPinId, FunctionSioInput, Pin, PullDown};
 use rp2040_hal::pac;
 use rp2040_hal::{
     adc::AdcPin,
@@ -321,13 +322,6 @@ fn main() -> ! {
 
     let mut _delay = cortex_m::delay::Delay::new(core.SYST, clocks.system_clock.freq().to_Hz());
 
-    let pins = rp2040_hal::gpio::Pins::new(
-        pac.IO_BANK0,
-        pac.PADS_BANK0,
-        sio.gpio_bank0,
-        &mut pac.RESETS,
-    );
-
     // Setup the other core
     let sys_freq = clocks.system_clock.freq().to_Hz();
     let mut mc = Multicore::new(&mut pac.PSM, &mut pac.PPB, &mut sio.fifo);
@@ -338,28 +332,33 @@ fn main() -> ! {
         synth_core(sys_freq)
     });
 
-    // let io = trumpet_synth::io::IO::new(io::SioFifo(sio.fifo), io::Rp2040Clavier::new(pins));
+    let pins = rp2040_hal::gpio::Pins::new(
+        pac.IO_BANK0,
+        pac.PADS_BANK0,
+        sio.gpio_bank0,
+        &mut pac.RESETS,
+    );
 
-    let mut valve_pins = [
+    let valve_pins = [
         pins.gpio1.into_pull_up_input().into_dyn_pin(),
         pins.gpio2.into_pull_up_input().into_dyn_pin(),
         pins.gpio3.into_pull_up_input().into_dyn_pin(),
     ];
 
-    let mut blow_pin = pins.gpio0.into_pull_up_input();
+    let blow_pin: gpio::Pin<Gpio0, FunctionSioInput, PullUp> = pins.gpio0.reconfigure();
 
-    let mut adc_pins: [AdcPin<Pin<DynPinId, DynFunction, PullDown>>; 2] = [
+    let adc_pins: [AdcPin<Pin<DynPinId, DynFunction, PullDown>>; 2] = [
         AdcPin::new(pins.gpio26.reconfigure().into_dyn_pin()).unwrap(),
         AdcPin::new(pins.gpio27.reconfigure().into_dyn_pin()).unwrap(),
     ];
 
-    let mut adc = Adc::new(pac.ADC, &mut pac.RESETS);
+    let adc = Adc::new(pac.ADC, &mut pac.RESETS);
 
-    let mut r: gpio::Pin<Gpio10, FunctionPwm, PullUp> = pins.gpio10.reconfigure();
-    let mut g: gpio::Pin<Gpio11, FunctionPwm, PullUp> = pins.gpio11.reconfigure();
-    let mut b: gpio::Pin<Gpio12, FunctionPwm, PullUp> = pins.gpio12.reconfigure();
+    let r: gpio::Pin<Gpio10, FunctionPwm, PullUp> = pins.gpio10.reconfigure();
+    let g: gpio::Pin<Gpio11, FunctionPwm, PullUp> = pins.gpio11.reconfigure();
+    let b: gpio::Pin<Gpio12, FunctionPwm, PullUp> = pins.gpio12.reconfigure();
 
-    let mut pwm_slices = pwm::Slices::new(pac.PWM, &mut pac.RESETS);
+    let pwm_slices = pwm::Slices::new(pac.PWM, &mut pac.RESETS);
     let mut pwm5 = pwm_slices.pwm5;
     pwm5.set_ph_correct();
     pwm5.enable();
@@ -375,9 +374,9 @@ fn main() -> ! {
     b_channel.output_to(b);
 
     let mut rgb = TrumpetRgbLed::new(r_channel, g_channel, b_channel);
-    rgb.color(0, 0, 0);
+    rgb.color(5, 0, 0);
 
-    let mut io = IO {
+    let io = IO {
         fifo: SioFifo(sio.fifo),
         inputs: Rp2040Inputs {
             valve_pins,
@@ -389,15 +388,20 @@ fn main() -> ! {
 
     let mut interface = TrumpetInterface::new(io);
 
-    let mut i = 0;
     loop {
         interface.run();
         // let state = TrumpetInputState::read_from(&mut io.inputs);
         // defmt::info!(
-        //     "{} {} {}",
+        //     "{} {} {} {} {} {}",
+        //     state.first,
+        //     state.second,
+        //     state.third,
         //     state.blow,
-        //     state.embouchure.to_bits() >> 12,
-        //     state.blowstrength.to_bits() >> 12
+        //     state.embouchure.to_bits() >> 10,
+        //     state.blowstrength.to_bits() >> 10
         // );
+        // for _ in 0..100000 {
+        //     asm::nop();
+        // }
     }
 }

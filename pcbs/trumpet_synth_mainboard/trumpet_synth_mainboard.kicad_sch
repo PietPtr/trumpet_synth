@@ -3551,7 +3551,7 @@
 			(embedded_fonts no)
 		)
 	)
-	(text "TODO:\nx make SWD pins accessible from case\nx make power switch accessible from case\nx double check linpot pins used\nx jack footprint is wrong\n- make 3 power pins available from case"
+	(text "TODO:\nx make SWD pins accessible from case\nx make power switch accessible from case\nx double check linpot pins used\nx jack footprint is wrong\nx make 3 power pins available from case\n- use headers for board to board connections (directly soldered on wires break) and make sure the case has space for them\n- got lucky with DAC placement, 3.5mm jack could've collided with the linear pot\n- use a different RGB LED footprint, this one is to error prone to solder"
 		(exclude_from_sim no)
 		(at 187.452 21.844 0)
 		(effects

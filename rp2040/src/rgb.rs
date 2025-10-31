@@ -1,7 +1,5 @@
 use embedded_hal::PwmPin;
-use rp2040_hal::pwm::{
-    self, Channel, ChannelId, FreeRunning, Pwm0, Pwm2, Pwm5, Pwm6, Slice, SliceId,
-};
+use rp2040_hal::pwm::{self, Channel, FreeRunning, Pwm5, Pwm6, Slice};
 
 pub struct TrumpetRgbLed {
     r_channel: Channel<Slice<Pwm5, FreeRunning>, pwm::A>,
