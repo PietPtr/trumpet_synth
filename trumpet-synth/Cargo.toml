@@ -17,6 +17,9 @@ enum-iterator = "2.1.0"
 tracing = { version = "0.1.41", optional = true }
 defmt = { version = "1.0.1", optional = true }
 
+[dev-dependencies]
+hound = "3.5.1"
+
 [features]
 std = ["tracing"]
 defmt = ["dep:defmt"]

@@ -9,18 +9,6 @@ use crate::{
 
 // TODO: different place for some of these structs/impls?
 
-/// Abstraction over raw input readings, takes care of e.g. debouncing and
-/// rescaling the potentiometer values.
-pub struct TrumpetInputs<INPUTS> {
-    inputs: INPUTS,
-    valve_debouncers: [Debouncer; 3],
-    blow_debouncer: Debouncer,
-    events: Vec<TrumpetEvent, 8>,
-    last_trumpet_state: TrumpetInputState,
-}
-
-const DEBOUNCE_TIME: u32 = 10;
-
 #[derive(Debug, Clone, Copy)]
 pub enum TrumpetEvent {
     BlowUp,
@@ -56,13 +44,22 @@ impl defmt::Format for TrumpetEvent {
         }
     }
 }
+/// Abstraction over raw input readings, takes care of e.g. debouncing and
+/// rescaling the potentiometer values.
+pub struct TrumpetInputs<INPUTS> {
+    inputs: INPUTS,
+    valve_debouncers: [Debouncer; 3],
+    blow_debouncer: Debouncer,
+    events: Vec<TrumpetEvent, 8>,
+    last_trumpet_state: TrumpetInputState,
+}
 
 impl<INPUTS: Inputs> TrumpetInputs<INPUTS> {
-    pub fn new(inputs: INPUTS) -> Self {
+    pub fn new(inputs: INPUTS, debounce_time: u32) -> Self {
         Self {
             inputs,
-            valve_debouncers: [Debouncer::new(DEBOUNCE_TIME); 3],
-            blow_debouncer: Debouncer::new(DEBOUNCE_TIME),
+            valve_debouncers: [Debouncer::new(debounce_time); 3],
+            blow_debouncer: Debouncer::new(debounce_time),
             events: Vec::new(),
             last_trumpet_state: TrumpetInputState::default(),
         }
@@ -177,10 +174,10 @@ pub struct TrumpetInterface<FIFO, INPUTS> {
 }
 
 impl<FIFO: Fifo, INPUTS: Inputs> TrumpetInterface<FIFO, INPUTS> {
-    pub fn new(io: IO<FIFO, INPUTS>) -> Self {
+    pub fn new(io: IO<FIFO, INPUTS>, debounce_time: u32) -> Self {
         Self {
             fifo: io.fifo,
-            inputs: TrumpetInputs::new(io.inputs),
+            inputs: TrumpetInputs::new(io.inputs, debounce_time),
             trumpet: Trumpet::new(BFLAT_TRUMPET),
         }
     }

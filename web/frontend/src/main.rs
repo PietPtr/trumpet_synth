@@ -253,7 +253,7 @@ fn app() -> Element {
                     inputs,
                 };
 
-                let mut interface = TrumpetInterface::new(io);
+                let mut interface = TrumpetInterface::new(io, 1);
 
                 const MILLIS_PER_ITER: u64 = 10;
                 let mut dt = MILLIS_PER_ITER;

@@ -385,7 +385,7 @@ fn main() -> ! {
         },
     };
 
-    let mut interface = TrumpetInterface::new(io);
+    let mut interface = TrumpetInterface::new(io, 10);
 
     loop {
         interface.run();

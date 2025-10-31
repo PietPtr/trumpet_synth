@@ -87,14 +87,17 @@ impl TrumpetSynthTester {
             embouchure: AtomicU16::new(0),
             blowstrength: AtomicU16::new(0),
         });
-        let interface = TrumpetInterface::new(IO {
-            fifo: TestFifo {
-                fifo: Arc::clone(&fifo),
+        let interface = TrumpetInterface::new(
+            IO {
+                fifo: TestFifo {
+                    fifo: Arc::clone(&fifo),
+                },
+                inputs: TestInputs {
+                    inputs: Arc::clone(&inputs),
+                },
             },
-            inputs: TestInputs {
-                inputs: Arc::clone(&inputs),
-            },
-        });
+            0,
+        );
 
         Self {
             synthesizer: trumpet_synth::synth::create(),
@@ -161,37 +164,35 @@ fn test_trumpet_frequency() {
             TesterInput::Blowstrength(0xffff),
             TesterInput::Blow(true),
             TesterInput::Blow(true),
-            TesterInput::Blow(true),
-            TesterInput::Blow(true),
-            TesterInput::Blow(true),
-            TesterInput::Blow(true),
-            TesterInput::Blow(true),
-            TesterInput::Blow(true),
-            TesterInput::Blow(true),
-            TesterInput::Blow(true),
-            TesterInput::Blow(true),
-            TesterInput::Blow(true),
-            TesterInput::Blow(true),
-            TesterInput::Blow(true),
+            TesterInput::NoInput { samples: 40000 },
+            TesterInput::Blow(false),
             TesterInput::NoInput { samples: 400 },
-            // TesterInput::Blow(false),
-            // TesterInput::NoInput { samples: 11 },
-            // TesterInput::Valve {
-            //     valve: Valve::First,
-            //     state: true,
-            // },
-            // TesterInput::Blow(true),
-            // TesterInput::NoInput { samples: 33 },
-            // TesterInput::Blow(false),
-            // TesterInput::NoInput { samples: 11 },
+            TesterInput::Blow(true),
+            TesterInput::Valve {
+                valve: Valve::First,
+                state: true,
+            },
+            TesterInput::Valve {
+                valve: Valve::First,
+                state: true,
+            },
+            TesterInput::NoInput { samples: 40000 },
         ]
         .into(),
     );
 
     let result = tester.run();
 
-    println!("{:?}", result); // TODO: broken, gives only zeroes
+    println!("{:?}", Vec::from_iter(result.iter().take(100)));
 
-    // TODO: resolve todo's in test impls of hardware, make mutexes for state?
-    // TODO: make sure the inputs change between calls to run and observe behaviour
+    let spec = hound::WavSpec {
+        channels: 1,
+        sample_rate: 24000,
+        bits_per_sample: 16,
+        sample_format: hound::SampleFormat::Int,
+    };
+    let mut writer = hound::WavWriter::create("out.wav", spec).unwrap();
+    for sample in result {
+        writer.write_sample(sample).unwrap();
+    }
 }
