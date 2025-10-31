@@ -480,7 +480,6 @@ name = "common"
 version = "0.1.0"
 dependencies = [
  "defmt 0.3.100",
- "embedded-hal 0.2.7",
  "fugit",
  "pio",
  "pio-proc",

@@ -1,5 +1,3 @@
 {
-    "rust-analyzer.cargo.features": [
-        "defmt"
-    ]
+    "rust-analyzer.cargo.features": []
 }

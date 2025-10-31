@@ -42,7 +42,7 @@ use rp2040_hal::{
 
 use common::consts::*;
 use rytmos_synth::{commands::Command, synth::Synth};
-use trumpet_synth::io::TrumpetInputState;
+use trumpet_synth::io::TrumpetInputState
 use trumpet_synth::{interface::TrumpetInterface, io::IO};
 
 static mut CORE1_STACK: Stack<4096> = Stack::new();
