@@ -6,6 +6,7 @@ use std::{
     },
 };
 
+use common::debouncer::Debouncer;
 use rytmos_synth::{commands::Command, synth::Synth};
 use trumpet_synth::{
     interface::TrumpetInterface,
@@ -108,6 +109,23 @@ impl TrumpetSynthTester {
         }
     }
 
+    pub fn run_to_wav(&mut self, filename: &str) -> Result<(), hound::Error> {
+        let result = self.run();
+
+        let spec = hound::WavSpec {
+            channels: 1,
+            sample_rate: 24000,
+            bits_per_sample: 16,
+            sample_format: hound::SampleFormat::Int,
+        };
+        let mut writer = hound::WavWriter::create(filename, spec)?;
+        for sample in result {
+            writer.write_sample(sample)?;
+        }
+
+        Ok(())
+    }
+
     pub fn run(&mut self) -> Vec<i16> {
         let mut result = Vec::new();
 
@@ -163,7 +181,6 @@ fn test_trumpet_frequency() {
             TesterInput::Embouchure(0x0fff),
             TesterInput::Blowstrength(0xffff),
             TesterInput::Blow(true),
-            TesterInput::Blow(true),
             TesterInput::NoInput { samples: 40000 },
             TesterInput::Blow(false),
             TesterInput::NoInput { samples: 400 },
@@ -172,6 +189,12 @@ fn test_trumpet_frequency() {
                 valve: Valve::First,
                 state: true,
             },
+            TesterInput::NoInput { samples: 10000 },
+            TesterInput::Valve {
+                valve: Valve::First,
+                state: false,
+            },
+            TesterInput::NoInput { samples: 10000 },
             TesterInput::Valve {
                 valve: Valve::First,
                 state: true,
@@ -181,18 +204,19 @@ fn test_trumpet_frequency() {
         .into(),
     );
 
-    let result = tester.run();
+    tester.run_to_wav("out.wav").unwrap();
+}
 
-    println!("{:?}", Vec::from_iter(result.iter().take(100)));
+#[test]
+fn debounce_test() {
+    let mut debouncer = Debouncer::new(0);
 
-    let spec = hound::WavSpec {
-        channels: 1,
-        sample_rate: 24000,
-        bits_per_sample: 16,
-        sample_format: hound::SampleFormat::Int,
-    };
-    let mut writer = hound::WavWriter::create("out.wav", spec).unwrap();
-    for sample in result {
-        writer.write_sample(sample).unwrap();
+    let states = [false, true, false, false, false];
+
+    for &state in states.iter() {
+        debouncer.update(state);
+        println!("{:?}", debouncer.is_high());
+        println!("{:?}", debouncer,);
+        println!("{:?}\n", debouncer.is_high());
     }
 }

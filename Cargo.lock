@@ -487,18 +487,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "common"
-version = "0.1.0"
-source = "git+https://github.com/PietPtr/Rytmos.git#42c6b5cf48060ebc9354ec3b7e13b93ef3b3a77c"
-dependencies = [
- "defmt 0.3.100",
- "fugit",
- "pio",
- "pio-proc",
- "rp2040-hal",
-]
-
-[[package]]
 name = "concurrent-queue"
 version = "2.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3965,7 +3953,7 @@ dependencies = [
 name = "trumpet-synth"
 version = "0.1.0"
 dependencies = [
- "common 0.1.0 (git+https://github.com/PietPtr/Rytmos.git)",
+ "common",
  "defmt 1.0.1",
  "enum-iterator",
  "fixed",
@@ -3981,7 +3969,7 @@ dependencies = [
 name = "trumpet-synth-rp2040"
 version = "0.1.0"
 dependencies = [
- "common 0.1.0",
+ "common",
  "cortex-m",
  "cortex-m-rt",
  "defmt 0.3.100",
