@@ -1,6 +1,7 @@
 target/
 **/pkg/*
 *.wav
+*.png
 
 *.zip
 pcbs/**/*backups*

@@ -38,12 +38,12 @@ impl io::Inputs for Rp2040Inputs {
     }
 
     fn embouchure(&mut self) -> trumpet_synth::trumpet::Embouchure {
-        let adc0_read: u16 = self.adc.read(&mut self.adc_pins[0]).unwrap();
+        let adc0_read: u16 = self.adc.read(&mut self.adc_pins[1]).unwrap();
         convert_adc_value(adc0_read)
     }
 
     fn blowstrength(&mut self) -> trumpet_synth::trumpet::BlowStrength {
-        let adc1_read: u16 = self.adc.read(&mut self.adc_pins[1]).unwrap();
+        let adc1_read: u16 = self.adc.read(&mut self.adc_pins[0]).unwrap();
         convert_adc_value(adc1_read)
     }
 }

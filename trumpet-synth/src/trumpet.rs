@@ -112,6 +112,26 @@ pub struct TrumpetState {
 }
 
 impl TrumpetState {
+    // Maps index (overtone) to embouchure at which the overtone resonates best
+    // 1 => Low C
+    // 2 => second line G
+    // 3 => middle C
+    // 4 => top space E
+    // 5 => top of the staff G
+    // 6 => Bb above the staff (31 cents sharp)
+    // 7 => high C
+    const EMBOUCHURE_TO_OVERTONE_MAP: [Embouchure; 9] = [
+        Embouchure::unwrapped_from_str("0.000"),
+        Embouchure::unwrapped_from_str("0.000"),
+        Embouchure::unwrapped_from_str("0.060"),
+        Embouchure::unwrapped_from_str("0.21"),
+        Embouchure::unwrapped_from_str("0.3"),
+        Embouchure::unwrapped_from_str("0.4"),
+        Embouchure::unwrapped_from_str("0.5"),
+        Embouchure::unwrapped_from_str("0.6"),
+        Embouchure::unwrapped_from_str("0.999"),
+    ];
+
     pub fn tube_length(&self, def: &TrumpetDefinition) -> U12F4 {
         let mut length = def.main_tube;
 
@@ -133,55 +153,82 @@ impl TrumpetState {
     /// Based on the embouchure tightness and lung pressure, which overtone is playing?
     /// None if no note is playing. Frequency = fundamental * (overtone + 1)
     pub fn overtone(&self) -> Option<u8> {
-        // 1 => Low C
-        // 2 => second line G
-        // 3 => middle C
-        // 4 => top space E
-        // 5 => top of the staff G
-        // 6 => Bb above the staff (31 cents sharp)
-        // 7 => high C
-        // TODO: more overtones for the fun?
-        // TODO: this function can use a lot of experimentation
-
         if !self.blow {
             return None;
         }
 
-        if self.lung_pressure > I1F15::from_num(0.1) {
-            if self.embouchure_tightness > I1F15::from_num(0.6) {
-                return Some(7);
-            }
-
-            if self.embouchure_tightness > I1F15::from_num(0.5) {
-                return Some(6);
-            }
-
-            if self.embouchure_tightness > I1F15::from_num(0.4) {
-                return Some(5);
-            }
-
-            if self.embouchure_tightness > I1F15::from_num(0.3) {
-                return Some(4);
-            }
-
-            if self.embouchure_tightness > I1F15::from_num(0.2) {
-                return Some(3);
-            }
-
-            if self.embouchure_tightness > I1F15::from_num(0.1) {
-                return Some(2);
-            }
-
-            if self.embouchure_tightness >= I1F15::from_num(0.0) {
-                return Some(1);
+        for (i, &embouchure) in Self::EMBOUCHURE_TO_OVERTONE_MAP.iter().enumerate().rev() {
+            if self.embouchure_tightness > embouchure {
+                return Some(i as u8);
             }
         }
 
         None
     }
 
+    const BENDABILITY_PER_OVERTONE: [U24F8; Self::EMBOUCHURE_TO_OVERTONE_MAP.len()] = [
+        U24F8::unwrapped_from_str("2.0"),
+        U24F8::unwrapped_from_str("1.5"),
+        U24F8::unwrapped_from_str("1.5"),
+        U24F8::unwrapped_from_str("0.5"),
+        U24F8::unwrapped_from_str("0.5"),
+        U24F8::unwrapped_from_str("0.4"),
+        U24F8::unwrapped_from_str("0.3"),
+        U24F8::unwrapped_from_str("0.1"),
+        U24F8::unwrapped_from_str("0.0"),
+    ];
+
+    pub fn bend(&self) -> U24F8 {
+        // The higher the lung pressure the more bend there is
+        // the further from the 'ideal' embouchure for the overtone, the more bend there is
+        let mut emb_bend = None;
+        let mut bend_up = false;
+        let mut overtone = 0;
+        let mut closest_overtone = None;
+        for embouchures in Self::EMBOUCHURE_TO_OVERTONE_MAP.windows(2) {
+            let emb1 = embouchures[0];
+            let emb2 = embouchures[1];
+
+            if self.embouchure_tightness > emb1 && self.embouchure_tightness < emb2 {
+                let max_diff = (emb2 - emb1) >> 1;
+                if self.embouchure_tightness.abs_diff(emb1)
+                    < self.embouchure_tightness.abs_diff(emb2)
+                {
+                    emb_bend = Some(max_diff - self.embouchure_tightness.abs_diff(emb1));
+                    closest_overtone = Some(overtone);
+                    bend_up = false;
+                } else {
+                    emb_bend = Some(max_diff - self.embouchure_tightness.abs_diff(emb2));
+                    closest_overtone = Some(overtone + 1);
+                    bend_up = true;
+                }
+            }
+            overtone += 1;
+        }
+
+        if let (Some(emb_bend), Some(closest_overtone)) = (emb_bend, closest_overtone) {
+            let bend = emb_bend;
+
+            let bend_capacity = BlowStrength::unwrapped_from_str(".9") * self.lung_pressure;
+
+            let bendability = Self::BENDABILITY_PER_OVERTONE[closest_overtone];
+
+            if bend_up {
+                U24F8::ONE
+                    + (U24F8::lossy_from(bend) * U24F8::lossy_from(bend_capacity) * bendability)
+            } else {
+                U24F8::ONE
+                    - (U24F8::lossy_from(bend) * U24F8::lossy_from(bend_capacity) * bendability)
+            }
+        } else {
+            U24F8::ONE
+        }
+    }
+
+    // TODO: move all the consts to a configuration
+
     pub fn volume(&self) -> U4F4 {
-        U4F4::lossy_from(self.lung_pressure)
+        U4F4::lossy_from(self.lung_pressure) + U4F4::unwrapped_from_str("0.2")
     }
 
     pub fn update(&mut self, event: TrumpetEvent) {
@@ -199,10 +246,10 @@ impl TrumpetState {
 
 // https://www.yamaha.com/en/musical_instrument_guide/trumpet/mechanism/mechanism002.html
 pub const BFLAT_TRUMPET: TrumpetDefinition = TrumpetDefinition {
-    main_tube: U12F4::unwrapped_from_str("1480"),
-    first_valve_tube: U12F4::unwrapped_from_str("160"),
-    second_valve_tube: U12F4::unwrapped_from_str("70"),
-    third_valve_tube: U12F4::unwrapped_from_str("270"),
+    main_tube: U12F4::unwrapped_from_str("1470"),
+    first_valve_tube: U12F4::unwrapped_from_str("190"),
+    second_valve_tube: U12F4::unwrapped_from_str("95"),
+    third_valve_tube: U12F4::unwrapped_from_str("285"),
     speed_of_sound: U24F8::unwrapped_from_str("343000"),
 };
 
@@ -230,7 +277,7 @@ impl Trumpet {
         let tube_length = self.state.tube_length(&self.def);
         let fundamental = self.def.speed_of_sound / (U24F8::from(tube_length));
 
-        Some(fundamental * U24F8::from_num(overtone + 1))
+        Some(fundamental * U24F8::from_num(overtone + 1) * self.state.bend())
     }
 
     pub fn update(&mut self, events: &[TrumpetEvent]) -> Vec<Command, 4> {

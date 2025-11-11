@@ -17,6 +17,7 @@ defmt = { version = "1.0.1", optional = true }
 
 [dev-dependencies]
 hound = "3.5.1"
+plotters = "0.3.7"
 
 [features]
 std = ["tracing"]

@@ -11,10 +11,14 @@ pub static BOOT2_FIRMWARE: [u8; 256] = rp2040_boot2::BOOT_LOADER_W25Q080;
 
 use cortex_m::singleton;
 #[allow(unused_imports)]
+#[cfg(feature = "defmt")]
 use defmt::{error, info, warn};
 use defmt_rtt as _;
 use fugit::HertzU32;
 use io::{Rp2040Inputs, SioFifo};
+#[allow(unused_imports)]
+#[cfg(not(feature = "defmt"))]
+use log::{error, info, warn};
 use panic_probe as _;
 use pio_proc::pio_file;
 use rgb::TrumpetRgbLed;
@@ -340,7 +344,7 @@ fn main() -> ! {
 
     let valve_pins = [
         pins.gpio1.into_pull_up_input().into_dyn_pin(),
-        pins.gpio2.into_pull_up_input().into_dyn_pin(),
+        pins.gpio16.into_pull_up_input().into_dyn_pin(), // Should be 2, is patched on the test PCB
         pins.gpio3.into_pull_up_input().into_dyn_pin(),
     ];
 
