@@ -60,7 +60,7 @@ fn plot(data: Vec<(f64, f64)>, y_label: &str, x_label: &str) -> Result<(), Box<d
         .fold((f64::INFINITY, f64::NEG_INFINITY), |(a, b), x| {
             (a.min(x), b.max(x))
         });
-    let (y_min, _y_max) = data
+    let (_y_min, _y_max) = data
         .iter()
         .map(|(_, y)| *y)
         .fold((f64::INFINITY, f64::NEG_INFINITY), |(a, b), y| {

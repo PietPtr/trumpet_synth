@@ -2,7 +2,7 @@
 
 use fixed::{
     traits::LossyFrom,
-    types::{I1F15, U0F16, U12F4, U24F8, U4F4},
+    types::{U0F16, U12F4, U24F8, U4F4},
 };
 use heapless::Vec;
 use rytmos_synth::commands::{Command, CommandMessage};
